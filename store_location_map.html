@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Printizy Stores</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: #1a1a1a;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            color: #525252;
+        }
+        
+        .map-container {
+            background: #fafafa;
+            border-radius: 8px;
+            border: 1px solid #e5e5e5;
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+            min-height: 600px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .search-box {
+            flex: 1;
+            max-width: 400px;
+            position: relative;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #e5e5e5;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: #000000;
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #e5e5e5;
+            background: #ffffff;
+            color: #525252;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .filter-btn:hover, .filter-btn.active {
+            background: #000000;
+            color: #ffffff;
+            border-color: #000000;
+            transform: translateY(-1px);
+        }
+        
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .search-result-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.2s ease;
+        }
+        
+        .search-result-item:hover {
+            background-color: #f8f9ff;
+        }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .search-result-name {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .search-result-location {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 2px;
+        }
+        
+        .search-result-services {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 2px;
+        }
+        
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+            color: #666;
+        }
+        
+        .breadcrumb-item {
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        
+        .breadcrumb-item:hover {
+            color: #667eea;
+        }
+        
+        .breadcrumb-item.active {
+            color: #333;
+            font-weight: bold;
+        }
+        
+        .breadcrumb-separator {
+            color: #ccc;
+        }
+        
+        .view-title {
+            text-align: center;
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+        
+        .grid-container {
+            display: grid;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .states-grid {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+        
+        .cities-grid {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+        
+        .stores-grid {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+        
+        .state-card, .city-card {
+            background: #fafafa;
+            color: #1a1a1a;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .state-card:hover, .city-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            border-color: #000000;
+        }
+        
+        .state-icon, .city-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+        
+        .state-name, .city-name {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .state-info, .city-info {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .store-card {
+            background: #fafafa;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .store-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            border-color: #000000;
+        }
+        
+        .store-icon {
+            width: 60px;
+            height: 60px;
+            background: #000000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .store-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .store-location {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .services {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        
+        .service-tag {
+            background: #e5e5e5;
+            color: #525252;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .back-button {
+            background: #000000;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        
+        .back-button:hover {
+            background: #404040;
+            transform: translateY(-1px);
+        }
+        
+        .click-hint {
+            text-align: center;
+            color: #525252;
+            font-size: 0.9rem;
+            margin-top: 20px;
+            opacity: 0.8;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #737373;
+            font-size: 1.1rem;
+            padding: 60px 20px;
+            grid-column: 1 / -1;
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .states-grid, .cities-grid, .stores-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            
+        .breadcrumb {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏪 Printizy Stores</h1>
+        <p>Find and visit printing stores across India</p>
+    </div>
+    
+    <div class="map-container">
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Search by store name, location, or services...">
+            </div>
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all">All Stores</button>
+                <button class="filter-btn" data-filter="print">Print</button>
+                <button class="filter-btn" data-filter="scan">Scan</button>
+                <button class="filter-btn" data-filter="copy">Copy</button>
+                <button class="filter-btn" data-filter="premium">Premium Services</button>
+            </div>
+        </div>
+        
+        <div class="breadcrumb" id="breadcrumb">
+            <span class="breadcrumb-item active" onclick="showStates()">🇮🇳 India</span>
+        </div>
+        
+        <div class="view-title" id="viewTitle">Select a State</div>
+        
+        <div id="backButtonContainer"></div>
+        
+        <div class="grid-container" id="contentGrid">
+            <!-- Content will be populated here -->
+        </div>
+        
+        <div class="click-hint" id="clickHint">
+            💡 Click on a state to explore cities and stores
+        </div>
+    </div>
+
+    <script>
+        const storeData = [
+            {
+                "Store Name": "Plus Express Print",
+                "Location": "412 MG Road, Bangalore, Karnataka, India",
+                "Services Offered": ["Copy"],
+                "URL": "https://printizy.co/file-upload/0uze2NmJAt1EU0Mnd3tB"
+            },
+            {
+                "Store Name": "Star Print Hub",
+                "Location": "939 Shopping Center, Jaipur, Rajasthan, India",
+                "Services Offered": ["Scan", "Copy"],
+                "URL": "https://printizy.co/file-upload/10hi3SpkXjEDLJCGxjaj"
+            },
+            {
+                "Store Name": "Pro Print Point",
+                "Location": "670 Main Street, Jaipur, Rajasthan, India",
+                "Services Offered": ["Print", "Scan", "Copy", "Lamination"],
+                "URL": "https://printizy.co/file-upload/1o5M9XP46tRZeRm2YRro"
+            },
+            {
+                "Store Name": "Pro Digital Solutions",
+                "Location": "509 MG Road, Jaipur, Rajasthan, India",
+                "Services Offered": ["Print", "Scan", "Copy", "Lamination"],
+                "URL": "https://printizy.co/file-upload/2GWSZ1nk5WC2shkkr8lR"
+            },
+            {
+                "Store Name": "Max Quick Print",
+                "Location": "438 Shopping Center, Mumbai, Maharashtra, India",
+                "Services Offered": ["Print", "Scan", "Copy", "Lamination"],
+                "URL": "https://printizy.co/file-upload/2ioDLOA7bT1Nhq7TicpD"
+            },
+            {
+                "Store Name": "Pro Smart Print",
+                "Location": "140 Gandhi Street, Bhopal, Madhya Pradesh, India",
+                "Services Offered": ["Print", "Scan", "Copy", "Digital Photography"],
+                "URL": "https://printizy.co/file-upload/33CibEOUYjr3C2CySNbW"
+            },
+            {
+                "Store Name": "Elite Print Hub",
+                "Location": "100 Business District, Indore, Madhya Pradesh, India",
+                "Services Offered": ["Scan", "Copy"],
+                "URL": "https://printizy.co/file-upload/3SeGXAVjjWvkpGluRO4u"
+            },
+            {
+                "Store Name": "Star Print Palace",
+                "Location": "587 MG Road, Delhi, Delhi, India",
+                "Services Offered": ["Print"],
+                "URL": "https://printizy.co/file-upload/4AusJUluY6VW6YQULmoC"
+            },
+            {
+                "Store Name": "Corner Quick Print",
+                "Location": "447 Gandhi Street, Lucknow, Uttar Pradesh, India",
+                "Services Offered": ["Print"],
+                "URL": "https://printizy.co/file-upload/4Hbs6c4DIuyJrRU9X3Jy"
+            },
+            {
+                "Store Name": "Pro Express Print",
+                "Location": "424 MG Road, Delhi, Delhi, India",
+                "Services Offered": ["Print", "Copy"],
+                "URL": "https://printizy.co/file-upload/5IPjQfTF4qFSjE84oaOL"
+            },
+            {
+                "Store Name": "Pro Print Hub",
+                "Location": "668 Market Road, Jaipur, Rajasthan, India",
+                "Services Offered": ["Print", "Scan", "Copy", "Lamination"],
+                "URL": "https://printizy.co/file-upload/67BwN7hvfJ6RbVWCol9P"
+            },
+            {
+                "Store Name": "Elite Quick Print",
+                "Location": "129 Main Street, Kolkata, West Bengal, India",
+                "Services Offered": ["Scan", "Copy"],
+                "URL": "https://printizy.co/file-upload/6IIQJ5ay4tar3khBVIy0"
+            },
+            {
+                "Store Name": "Royal Quick Print",
+                "Location": "26 Station Road, Indore, Madhya Pradesh, India",
+                "Services Offered": ["Print", "Scan", "Copy", "Digital Photography"],
+                "URL": "https://printizy.co/file-upload/7UEEy6y9MNz7ZfdmD5pO"
+            },
+            {
+                "Store Name": "Royal Express Print",
+                "Location": "518 Gandhi Street, Lucknow, Uttar Pradesh, India",
+                "Services Offered": ["Print", "Copy"],
+                "URL": "https://printizy.co/file-upload/9PS5BxibZdOQAKHx1yNR"
+            },
+            {
+                "Store Name": "Pro Smart Print",
+                "Location": "507 Commercial Complex, Lucknow, Uttar Pradesh, India",
+                "Services Offered": ["Print", "Scan", "Copy", "Binding"],
+                "URL": "https://printizy.co/file-upload/BLlnPqKp4YPC15RdSsS1"
+            },
+            {
+                "Store Name": "Prime Quick Print",
+                "Location": "897 Station Road, Lucknow, Uttar Pradesh, India",
+                "Services Offered": ["Print", "Scan", "Copy", "Digital Photography"],
+                "URL": "https://printizy.co/file-upload/BZEZnR2GDNC676sGZ8jI"
+            },
+            {
+                "Store Name": "Max Digital Print",
+                "Location": "992 Gandhi Street, Hyderabad, Telangana, India",
+                "Services Offered": ["Print"],
+                "URL": "https://printizy.co/file-upload/BiIi1EiutIvDMv8Bxpjm"
+            },
+            {
+                "Store Name": "Royal Copy World",
+                "Location": "829 Gandhi Street, Chennai, Tamil Nadu, India",
+                "Services Offered": ["Print", "Scan", "Copy", "Binding"],
+                "URL": "https://printizy.co/file-upload/BjvcoS4l563AoOUGs1LF"
+            },
+            {
+                "Store Name": "Zone Copy Center",
+                "Location": "601 Gandhi Street, Jaipur, Rajasthan, India",
+                "Services Offered": ["Scan", "Copy"],
+                "URL": "https://printizy.co/file-upload/CLN8oUf7bHXuT8TJ1lPQ"
+            },
+            {
+                "Store Name": "Royal Copy World",
+                "Location": "200 Market Road, Coimbatore, Tamil Nadu, India",
+                "Services Offered": ["Scan", "Copy"],
+                "URL": "https://printizy.co/file-upload/ChR0ejDPkz5lILrB1G9G"
+            }
+        ];
+
+        // State icons mapping
+        const stateIcons = {
+            'Karnataka': '🌴',
+            'Rajasthan': '🏛️',
+            'Maharashtra': '🏙️',
+            'Madhya Pradesh': '🌾',
+            'Delhi': '🏛️',
+            'Uttar Pradesh': '🕌',
+            'West Bengal': '🎭',
+            'Telangana': '💎',
+            'Tamil Nadu': '🌊'
+        };
+
+        let currentView = 'states';
+        let currentState = null;
+        let currentCity = null;
+        let currentFilter = 'all';
+        let filteredStores = [...storeData];
+
+        // Parse data into hierarchical structure with filtering
+        function parseStoreData(stores = storeData) {
+            const stateData = {};
+            
+            stores.forEach(store => {
+                const locationParts = store.Location.split(', ');
+                const city = locationParts[locationParts.length - 3];
+                const state = locationParts[locationParts.length - 2];
+                
+                if (!stateData[state]) {
+                    stateData[state] = {};
+                }
+                if (!stateData[state][city]) {
+                    stateData[state][city] = [];
+                }
+                stateData[state][city].push(store);
+            });
+            
+            return stateData;
+        }
+
+        function applyFilter(filterType) {
+            currentFilter = filterType;
+            switch(filterType) {
+                case 'all':
+                    filteredStores = [...storeData];
+                    break;
+                case 'print':
+                    filteredStores = storeData.filter(store => 
+                        store['Services Offered'].includes('Print'));
+                    break;
+                case 'scan':
+                    filteredStores = storeData.filter(store => 
+                        store['Services Offered'].includes('Scan'));
+                    break;
+                case 'copy':
+                    filteredStores = storeData.filter(store => 
+                        store['Services Offered'].includes('Copy'));
+                    break;
+                case 'premium':
+                    filteredStores = storeData.filter(store => 
+                        store['Services Offered'].some(service => 
+                            ['Lamination', 'Binding', 'Digital Photography'].includes(service)));
+                    break;
+            }
+        }
+
+        function updateBreadcrumb() {
+            const breadcrumb = document.getElementById('breadcrumb');
+            let breadcrumbHTML = '<span class="breadcrumb-item" onclick="showStates()">🇮🇳 India</span>';
+            
+            if (currentState) {
+                breadcrumbHTML += ' <span class="breadcrumb-separator">›</span> ';
+                breadcrumbHTML += `<span class="breadcrumb-item" onclick="showCities('${currentState}')">${stateIcons[currentState]} ${currentState}</span>`;
+            }
+            
+            if (currentCity) {
+                breadcrumbHTML += ' <span class="breadcrumb-separator">›</span> ';
+                breadcrumbHTML += `<span class="breadcrumb-item active">🏙️ ${currentCity}</span>`;
+            }
+            
+            breadcrumb.innerHTML = breadcrumbHTML;
+        }
+
+        function updateBackButton() {
+            const container = document.getElementById('backButtonContainer');
+            if (currentView === 'states') {
+                container.innerHTML = '';
+            } else if (currentView === 'cities') {
+                container.innerHTML = '<button class="back-button" onclick="showStates()">← Back to States</button>';
+            } else if (currentView === 'stores') {
+                container.innerHTML = `<button class="back-button" onclick="showCities('${currentState}')">← Back to Cities</button>`;
+            }
+        }
+
+        function showStates() {
+            currentView = 'states';
+            currentState = null;
+            currentCity = null;
+            
+            const hierarchicalData = parseStoreData(filteredStores);
+            
+            document.getElementById('viewTitle').textContent = 'Select a State';
+            document.getElementById('clickHint').textContent = '💡 Click on a state to explore cities and stores';
+            
+            updateBreadcrumb();
+            updateBackButton();
+            
+            const grid = document.getElementById('contentGrid');
+            grid.className = 'grid-container states-grid';
+            grid.innerHTML = '';
+            
+            if (Object.keys(hierarchicalData).length === 0) {
+                grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div>No stores found with the current filter</div>';
+                return;
+            }
+            
+            Object.keys(hierarchicalData).forEach(state => {
+                const cityCount = Object.keys(hierarchicalData[state]).length;
+                const storeCount = Object.values(hierarchicalData[state]).flat().length;
+                
+                const stateCard = document.createElement('div');
+                stateCard.className = 'state-card';
+                stateCard.onclick = () => showCities(state);
+                
+                stateCard.innerHTML = `
+                    <span class="state-icon">${stateIcons[state] || '🏞️'}</span>
+                    <div class="state-name">${state}</div>
+                    <div class="state-info">${cityCount} ${cityCount === 1 ? 'city' : 'cities'} • ${storeCount} ${storeCount === 1 ? 'store' : 'stores'}</div>
+                `;
+                
+                grid.appendChild(stateCard);
+            });
+        }
+
+        function showCities(state) {
+            currentView = 'cities';
+            currentState = state;
+            currentCity = null;
+            
+            const hierarchicalData = parseStoreData(filteredStores);
+            
+            if (!hierarchicalData[state]) {
+                // If state has no stores with current filter, show empty state
+                document.getElementById('viewTitle').textContent = `Cities in ${state}`;
+                document.getElementById('clickHint').textContent = 'No stores found with the current filter';
+                
+                updateBreadcrumb();
+                updateBackButton();
+                
+                const grid = document.getElementById('contentGrid');
+                grid.className = 'grid-container cities-grid';
+                grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div>No stores found with the current filter</div>';
+                return;
+            }
+            
+            document.getElementById('viewTitle').textContent = `Cities in ${state}`;
+            document.getElementById('clickHint').textContent = '💡 Click on a city to view stores';
+            
+            updateBreadcrumb();
+            updateBackButton();
+            
+            const grid = document.getElementById('contentGrid');
+            grid.className = 'grid-container cities-grid';
+            grid.innerHTML = '';
+            
+            Object.keys(hierarchicalData[state]).forEach(city => {
+                const storeCount = hierarchicalData[state][city].length;
+                
+                const cityCard = document.createElement('div');
+                cityCard.className = 'city-card';
+                cityCard.onclick = () => showStores(state, city);
+                
+                cityCard.innerHTML = `
+                    <span class="city-icon">🏙️</span>
+                    <div class="city-name">${city}</div>
+                    <div class="city-info">${storeCount} ${storeCount === 1 ? 'store' : 'stores'}</div>
+                `;
+                
+                grid.appendChild(cityCard);
+            });
+        }
+
+        function showStores(state, city) {
+            currentView = 'stores';
+            currentState = state;
+            currentCity = city;
+            
+            const hierarchicalData = parseStoreData(filteredStores);
+            
+            document.getElementById('viewTitle').textContent = `Stores in ${city}`;
+            document.getElementById('clickHint').textContent = '💡 Click on any store card to visit their website';
+            
+            updateBreadcrumb();
+            updateBackButton();
+            
+            const grid = document.getElementById('contentGrid');
+            grid.className = 'grid-container stores-grid';
+            grid.innerHTML = '';
+            
+            if (!hierarchicalData[state] || !hierarchicalData[state][city]) {
+                grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div>No stores found with the current filter</div>';
+                return;
+            }
+            
+            const stores = hierarchicalData[state][city];
+            
+            stores.forEach(store => {
+                const storeCard = createStoreCard(store);
+                grid.appendChild(storeCard);
+            });
+        }
+
+        function getStoreIcon(services) {
+            if (services.includes('Digital Photography') || services.includes('Lamination') || services.includes('Binding')) {
+                return '🏢';
+            } else if (services.includes('Print') && services.includes('Scan') && services.includes('Copy')) {
+                return '🏪';
+            } else if (services.includes('Print')) {
+                return '🖨️';
+            } else if (services.includes('Scan')) {
+                return '📱';
+            } else {
+                return '📄';
+            }
+        }
+
+        function createStoreCard(store) {
+            const card = document.createElement('div');
+            card.className = 'store-card';
+            card.onclick = () => window.open(store.URL, '_blank');
+
+            card.innerHTML = `
+                <div class="store-icon">${getStoreIcon(store['Services Offered'])}</div>
+                <div class="store-name">${store['Store Name']}</div>
+                <div class="store-location">
+                    📍 ${store.Location}
+                </div>
+                <div class="services">
+                    ${store['Services Offered'].map(service => 
+                        `<span class="service-tag">${service}</span>`
+                    ).join('')}
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Search functionality
+        function setupSearch() {
+            const searchInput = document.getElementById('searchInput');
+            let searchTimeout;
+            
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                const query = e.target.value.trim();
+                
+                if (query.length < 2) {
+                    hideSearchResults();
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    performSearch(query);
+                }, 300);
+            });
+            
+            // Hide search results when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.search-box')) {
+                    hideSearchResults();
+                }
+            });
+        }
+        
+        function performSearch(query) {
+            const searchTerm = query.toLowerCase();
+            const results = filteredStores.filter(store => 
+                store['Store Name'].toLowerCase().includes(searchTerm) ||
+                store.Location.toLowerCase().includes(searchTerm) ||
+                store['Services Offered'].some(service => 
+                    service.toLowerCase().includes(searchTerm))
+            );
+            
+            showSearchResults(results);
+        }
+        
+        function showSearchResults(results) {
+            const searchBox = document.querySelector('.search-box');
+            let searchResults = searchBox.querySelector('.search-results');
+            
+            if (!searchResults) {
+                searchResults = document.createElement('div');
+                searchResults.className = 'search-results';
+                searchBox.appendChild(searchResults);
+            }
+            
+            if (results.length === 0) {
+                searchResults.innerHTML = '<div class="search-result-item">No stores found</div>';
+            } else {
+                searchResults.innerHTML = results.slice(0, 5).map(store => {
+                    const locationParts = store.Location.split(', ');
+                    const city = locationParts[locationParts.length - 3];
+                    const state = locationParts[locationParts.length - 2];
+                    const services = store['Services Offered'].join(', ');
+                    
+                    return `
+                        <div class="search-result-item" onclick="navigateToStore('${state}', '${city}', '${store['Store Name']}')">
+                            <div class="search-result-name">${store['Store Name']}</div>
+                            <div class="search-result-location">${city}, ${state}</div>
+                            <div class="search-result-services">${services}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            searchResults.style.display = 'block';
+        }
+        
+        function hideSearchResults() {
+            const searchResults = document.querySelector('.search-results');
+            if (searchResults) {
+                searchResults.style.display = 'none';
+            }
+        }
+        
+        function navigateToStore(state, city, storeName) {
+            hideSearchResults();
+            document.getElementById('searchInput').value = '';
+            
+            // Navigate to the specific store
+            showStores(state, city);
+            
+            // Scroll to the specific store card
+            setTimeout(() => {
+                const storeCards = document.querySelectorAll('.store-card');
+                storeCards.forEach(card => {
+                    if (card.querySelector('.store-name').textContent === storeName) {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        card.style.background = 'linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%)';
+                        setTimeout(() => {
+                            card.style.background = 'linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)';
+                        }, 2000);
+                    }
+                });
+            }, 100);
+        }
+
+        // Initialize with states view
+        showStates();
+        setupSearch();
+        
+        // Setup filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                applyFilter(e.target.dataset.filter);
+                
+                // Refresh current view with new filter
+                if (currentView === 'states') {
+                    showStates();
+                } else if (currentView === 'cities' && currentState) {
+                    showCities(currentState);
+                } else if (currentView === 'stores' && currentState && currentCity) {
+                    showStores(currentState, currentCity);
+                }
+                
+                // Clear search when filter changes
+                document.getElementById('searchInput').value = '';
+                hideSearchResults();
+            });
+        });
+    </script>
+</body>
+</html>
