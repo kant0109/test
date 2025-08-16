@@ -352,6 +352,32 @@
             font-size: 0.9rem;
         }
         
+        .highlight-text {
+            font-weight: 700;
+            color: #ffffff;
+            font-size: 1.2rem;
+            text-align: center;
+            margin-top: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: 0.5px;
+            position: relative;
+        }
+        
+        .highlight-text::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #ffffff, transparent);
+        }
+        
+        .become-store .btn-primary {
+            margin-top: 0.2rem;
+        }
+        
         /* Contact Us Section */
         .contact-us {
             padding: 5rem 0;
@@ -491,11 +517,11 @@
             <div class="services-grid">
                 <div class="service-card">
                     <div class="service-icon">🔍</div>
-                    <h3>Scan in-store or Pick a store <a href="#" onclick="openPrintStores()" class="arrow-link">→</a></h3>
-                    <p></p>Browse Printizy’s network of stores around you. Check services, compare, and choose what fits best</p>
+                    <h3>Scan @ store or Choose a store <a href="#" onclick="openPrintStores()" class="arrow-link">→</a></h3>
+                    <p>Browse Printizy’s network of stores around you. Check services, compare, and choose what fits best. Go to the store & scan or select the store online</p>
                 </div>
                 <div class="service-card">
-                    <div class="service-icon">📤</div>
+                    <div class="service-icon">☁️⬆️</div>
                     <h3>Upload</h3>
                     <p>Easily upload your documents through our secure platform. Support for all major file formats with instant processing.</p>
                 </div>
@@ -512,14 +538,14 @@
         <div class="container">
             <div class="become-store-content">
                 <h2>Setup a Printizy Store</h2>
-                <p>Are you running a printing and photo copy shop, café, super mart or having a printer? Join our network and start earning with Printizy!</p>
+                <p>Join our network and generate revenue with Printizy!</p>
                 
                 <div class="store-types">
                     <div class="store-type">Printing & Photo Copy Shop</div>
                     <div class="store-type">Café</div>
                     <div class="store-type">Super Mart</div>
-                    <div class="store-type">Residential Community</div>
-                    <div class="store-type">Anyone with Printer(s)</div>
+                    <div class="store-type">Resident Welfare Association</div>
+                    <p class="highlight-text">Offer neighbourhood printing services</p>
                 </div>
                 
                 <a href="#" class="btn-primary" onclick="openJobberPage()">Start</a>
