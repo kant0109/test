@@ -180,11 +180,7 @@
         }
         
         .view-title {
-            text-align: center;
-            font-size: 2rem;
-            color: #333;
-            margin-bottom: 30px;
-            font-weight: bold;
+            display: none;
         }
         
         .grid-container {
@@ -358,13 +354,25 @@
                 flex-wrap: wrap;
             }
         }
+
+        /* Map view styles */
+        #map {
+            width: 100%;
+            height: 600px;
+            border-radius: 8px;
+            border: 1px solid #e5e5e5;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        @media (max-width: 768px) {
+            #map { height: 500px; }
+        }
     </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 <body>
-    <div class="header">
-        <h1>🏪 Printizy Stores</h1>
-        <p>Find and visit printing stores across India</p>
-    </div>
+    
     
     <div class="map-container">
         <div class="controls">
@@ -380,17 +388,14 @@
             </div>
         </div>
         
-        <div class="breadcrumb" id="breadcrumb">
-            <span class="breadcrumb-item active" onclick="showStates()">🇮🇳 India</span>
-        </div>
+        <div class="breadcrumb" id="breadcrumb"></div>
         
-        <div class="view-title" id="viewTitle">Select a State</div>
+        <div class="view-title" id="viewTitle">Explore on the map</div>
         
         <div id="backButtonContainer"></div>
         
-        <div class="grid-container" id="contentGrid">
-            <!-- Content will be populated here -->
-        </div>
+        <div class="grid-container" id="contentGrid"></div>
+        <div id="map"></div>
         
         <div class="click-hint" id="clickHint">
             💡 Click on a state to explore cities and stores
@@ -534,11 +539,29 @@
             'Tamil Nadu': '🌊'
         };
 
-        let currentView = 'states';
+        let currentView = 'map';
         let currentState = null;
         let currentCity = null;
         let currentFilter = 'all';
+        let currentSearchTerm = '';
         let filteredStores = [...storeData];
+        let leafletMap = null;
+        let markerLayer = null;
+
+        // Basic city coordinates (approximate) for map plotting
+        const cityCoordinates = {
+            'Bangalore': [12.9716, 77.5946],
+            'Jaipur': [26.9124, 75.7873],
+            'Mumbai': [19.076, 72.8777],
+            'Bhopal': [23.2599, 77.4126],
+            'Indore': [22.7196, 75.8577],
+            'Delhi': [28.6139, 77.2090],
+            'Lucknow': [26.8467, 80.9462],
+            'Kolkata': [22.5726, 88.3639],
+            'Hyderabad': [17.3850, 78.4867],
+            'Chennai': [13.0827, 80.2707],
+            'Coimbatore': [11.0168, 76.9558]
+        };
 
         // Parse data into hierarchical structure with filtering
         function parseStoreData(stores = storeData) {
@@ -561,44 +584,57 @@
             return stateData;
         }
 
-        function applyFilter(filterType) {
-            currentFilter = filterType;
-            switch(filterType) {
-                case 'all':
-                    filteredStores = [...storeData];
-                    break;
+        function recomputeFilteredStores() {
+            // Base by filter type
+            let base = [];
+            switch (currentFilter) {
                 case 'print':
-                    filteredStores = storeData.filter(store => 
-                        store['Services Offered'].includes('Print'));
+                    base = storeData.filter(store => store['Services Offered'].includes('Print'));
                     break;
                 case 'scan':
-                    filteredStores = storeData.filter(store => 
-                        store['Services Offered'].includes('Scan'));
+                    base = storeData.filter(store => store['Services Offered'].includes('Scan'));
                     break;
                 case 'copy':
-                    filteredStores = storeData.filter(store => 
-                        store['Services Offered'].includes('Copy'));
+                    base = storeData.filter(store => store['Services Offered'].includes('Copy'));
                     break;
                 case 'premium':
-                    filteredStores = storeData.filter(store => 
-                        store['Services Offered'].some(service => 
-                            ['Lamination', 'Binding', 'Digital Photography'].includes(service)));
+                    base = storeData.filter(store => store['Services Offered'].some(s => ['Lamination', 'Binding', 'Digital Photography'].includes(s)));
                     break;
+                default:
+                    base = [...storeData];
             }
+
+            const q = currentSearchTerm.trim().toLowerCase();
+            if (!q) {
+                filteredStores = base;
+                return;
+            }
+
+            filteredStores = base.filter(store => {
+                const name = store['Store Name'].toLowerCase();
+                const location = store.Location.toLowerCase();
+                const services = store['Services Offered'].map(s => s.toLowerCase());
+                return (
+                    name.includes(q) ||
+                    location.includes(q) ||
+                    services.some(s => s.includes(q))
+                );
+            });
+        }
+
+        function applyFilter(filterType) {
+            currentFilter = filterType;
+            recomputeFilteredStores();
         }
 
         function updateBreadcrumb() {
             const breadcrumb = document.getElementById('breadcrumb');
-            let breadcrumbHTML = '<span class="breadcrumb-item" onclick="showStates()">🇮🇳 India</span>';
-            
-            if (currentState) {
-                breadcrumbHTML += ' <span class="breadcrumb-separator">›</span> ';
-                breadcrumbHTML += `<span class="breadcrumb-item" onclick="showCities('${currentState}')">${stateIcons[currentState]} ${currentState}</span>`;
-            }
+            let breadcrumbHTML = '';
             
             if (currentCity) {
-                breadcrumbHTML += ' <span class="breadcrumb-separator">›</span> ';
                 breadcrumbHTML += `<span class="breadcrumb-item active">🏙️ ${currentCity}</span>`;
+            } else if (currentState) {
+                breadcrumbHTML += `<span class="breadcrumb-item">${stateIcons[currentState] || ''} ${currentState}</span>`;
             }
             
             breadcrumb.innerHTML = breadcrumbHTML;
@@ -606,53 +642,22 @@
 
         function updateBackButton() {
             const container = document.getElementById('backButtonContainer');
-            if (currentView === 'states') {
-                container.innerHTML = '';
-            } else if (currentView === 'cities') {
-                container.innerHTML = '<button class="back-button" onclick="showStates()">← Back to States</button>';
-            } else if (currentView === 'stores') {
-                container.innerHTML = `<button class="back-button" onclick="showCities('${currentState}')">← Back to Cities</button>`;
-            }
+            container.innerHTML = '';
         }
 
         function showStates() {
-            currentView = 'states';
+            // Switch to map view
+            currentView = 'map';
             currentState = null;
             currentCity = null;
             
-            const hierarchicalData = parseStoreData(filteredStores);
-            
-            document.getElementById('viewTitle').textContent = 'Select a State';
-            document.getElementById('clickHint').textContent = '💡 Click on a state to explore cities and stores';
+            document.getElementById('viewTitle').textContent = 'Explore on the map';
+            document.getElementById('clickHint').textContent = '💡 Tap markers to view store details';
             
             updateBreadcrumb();
             updateBackButton();
-            
-            const grid = document.getElementById('contentGrid');
-            grid.className = 'grid-container states-grid';
-            grid.innerHTML = '';
-            
-            if (Object.keys(hierarchicalData).length === 0) {
-                grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div>No stores found with the current filter</div>';
-                return;
-            }
-            
-            Object.keys(hierarchicalData).forEach(state => {
-                const cityCount = Object.keys(hierarchicalData[state]).length;
-                const storeCount = Object.values(hierarchicalData[state]).flat().length;
-                
-                const stateCard = document.createElement('div');
-                stateCard.className = 'state-card';
-                stateCard.onclick = () => showCities(state);
-                
-                stateCard.innerHTML = `
-                    <span class="state-icon">${stateIcons[state] || '🏞️'}</span>
-                    <div class="state-name">${state}</div>
-                    <div class="state-info">${cityCount} ${cityCount === 1 ? 'city' : 'cities'} • ${storeCount} ${storeCount === 1 ? 'store' : 'stores'}</div>
-                `;
-                
-                grid.appendChild(stateCard);
-            });
+            initMapIfNeeded();
+            updateMapMarkers();
         }
 
         function showCities(state) {
@@ -775,16 +780,32 @@
             
             searchInput.addEventListener('input', (e) => {
                 clearTimeout(searchTimeout);
-                const query = e.target.value.trim();
-                
-                if (query.length < 2) {
-                    hideSearchResults();
-                    return;
-                }
-                
+                currentSearchTerm = e.target.value;
                 searchTimeout = setTimeout(() => {
-                    performSearch(query);
-                }, 300);
+                    recomputeFilteredStores();
+                    updateMapMarkers();
+                    if (currentSearchTerm.trim().length >= 2) {
+                        performSearch(currentSearchTerm);
+                    } else {
+                        hideSearchResults();
+                    }
+                }, 250);
+            });
+
+            // Enter lists results and refreshes map markers (no navigation)
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    currentSearchTerm = searchInput.value;
+                    recomputeFilteredStores();
+                    updateMapMarkers();
+                    const term = currentSearchTerm.trim();
+                    if (term.length >= 2) {
+                        performSearch(term);
+                    } else {
+                        hideSearchResults();
+                    }
+                }
             });
             
             // Hide search results when clicking outside
@@ -827,11 +848,11 @@
                     const services = store['Services Offered'].join(', ');
                     
                     return `
-                        <div class="search-result-item" onclick="navigateToStore('${state}', '${city}', '${store['Store Name']}')">
+                        <a class="search-result-item" href="${store.URL}" target="_blank" rel="noopener">
                             <div class="search-result-name">${store['Store Name']}</div>
                             <div class="search-result-location">${city}, ${state}</div>
                             <div class="search-result-services">${services}</div>
-                        </div>
+                        </a>
                     `;
                 }).join('');
             }
@@ -849,26 +870,82 @@
         function navigateToStore(state, city, storeName) {
             hideSearchResults();
             document.getElementById('searchInput').value = '';
-            
-            // Navigate to the specific store
-            showStores(state, city);
-            
-            // Scroll to the specific store card
-            setTimeout(() => {
-                const storeCards = document.querySelectorAll('.store-card');
-                storeCards.forEach(card => {
-                    if (card.querySelector('.store-name').textContent === storeName) {
-                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        card.style.background = 'linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%)';
-                        setTimeout(() => {
-                            card.style.background = 'linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)';
-                        }, 2000);
-                    }
-                });
-            }, 100);
+            initMapIfNeeded();
+            const coords = cityCoordinates[city];
+            if (coords && leafletMap) {
+                leafletMap.setView(coords, 11);
+                currentCity = city;
+                updateBreadcrumb();
+                if (markerLayer) {
+                    markerLayer.eachLayer(layer => {
+                        if (layer.options && layer.options.title === storeName) {
+                            layer.openPopup();
+                        }
+                    });
+                }
+            }
         }
 
-        // Initialize with states view
+        function initMapIfNeeded() {
+            if (leafletMap) return;
+            const mapElement = document.getElementById('map');
+            if (!mapElement) return;
+            const indiaBounds = L.latLngBounds(
+                [6.5546079, 68.1113787],
+                [35.6745457, 97.395561]
+            );
+
+            leafletMap = L.map('map', {
+                zoomControl: true,
+                maxBounds: indiaBounds,
+                maxBoundsViscosity: 1.0,
+            }).setView([22.5, 80], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(leafletMap);
+            markerLayer = L.layerGroup().addTo(leafletMap);
+            leafletMap.fitBounds(indiaBounds.pad(-0.05));
+        }
+
+        function updateMapMarkers() {
+            if (!leafletMap || !markerLayer) return;
+            markerLayer.clearLayers();
+            const bounds = [];
+            const stores = filteredStores;
+            stores.forEach(store => {
+                const parts = store.Location.split(', ');
+                const city = parts[parts.length - 3];
+                const state = parts[parts.length - 2];
+                const coords = cityCoordinates[city];
+                if (!coords) return;
+                const marker = L.marker(coords, { title: store['Store Name'] });
+                const services = store['Services Offered'].join(', ');
+                marker.bindPopup(
+                    `<div style="min-width:220px">` +
+                    `<div style="font-weight:700;margin-bottom:4px;color:#333">${store['Store Name']}</div>` +
+                    `<div style="font-size:12px;color:#666;margin-bottom:6px">${city}, ${state}</div>` +
+                    `<div style="font-size:12px;color:#525252">${services}</div>` +
+                    `<div style="margin-top:8px"><a href="${store.URL}" target="_blank" style="color:#1d4ed8;text-decoration:none;font-weight:600">Visit store →</a></div>` +
+                    `</div>`
+                );
+                marker.addTo(markerLayer);
+                bounds.push(coords);
+            });
+            if (bounds.length > 0) {
+                // Fit to markers but clamp within India bounds if defined
+                const indiaBounds = L.latLngBounds(
+                    [6.5546079, 68.1113787],
+                    [35.6745457, 97.395561]
+                );
+                const markerBounds = L.latLngBounds(bounds);
+                const targetBounds = markerBounds.intersects(indiaBounds) ? markerBounds.extend(indiaBounds) && markerBounds : indiaBounds;
+                leafletMap.fitBounds(targetBounds, { padding: [30, 30] });
+            }
+        }
+
+        // Initialize with map view
+        recomputeFilteredStores();
         showStates();
         setupSearch();
         
@@ -877,20 +954,21 @@
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
+                // Reset search before applying filter so filters work independently
+                document.getElementById('searchInput').value = '';
+                currentSearchTerm = '';
+                hideSearchResults();
                 applyFilter(e.target.dataset.filter);
                 
                 // Refresh current view with new filter
-                if (currentView === 'states') {
-                    showStates();
+                if (currentView === 'map') {
+                    updateMapMarkers();
                 } else if (currentView === 'cities' && currentState) {
                     showCities(currentState);
                 } else if (currentView === 'stores' && currentState && currentCity) {
                     showStores(currentState, currentCity);
                 }
                 
-                // Clear search when filter changes
-                document.getElementById('searchInput').value = '';
-                hideSearchResults();
             });
         });
     </script>
